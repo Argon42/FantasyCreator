@@ -11,9 +11,14 @@ public class RequestQueue
     private readonly Queue<Request> _queue = new(20);
     private Request? _currentRequest;
 
-    public (bool, string) CreateNewRequest(Dictionary<string, string> input, long chatId)
+    public (bool, string) CreateNewRequest(
+        Dictionary<string, string> input,
+        long chatId,
+        string? imageUrl,
+        string? maskUrl)
     {
-        if (Creator.TryCreatorData(input, out ImageCreatorData data) == false) return (false, IncorrectRequestResponse);
+        if (Creator.TryCreatorData(input, out ImageCreatorData data, imageUrl, maskUrl) == false)
+            return (false, IncorrectRequestResponse);
 
         Request request = new(data, chatId);
         _queue.Enqueue(request);
@@ -24,7 +29,9 @@ public class RequestQueue
             return (true, string.Format(StartRequestResponse, TimeSpan.FromSeconds(requestTime)));
         }
 
-        float time = _queue.Sum(request1 => request1.Data.CalculateTime()) - _currentRequest?.Time ?? 0;
+        float time = _queue.Sum(request1 => request1.Data.CalculateTime()) +
+                     (_currentRequest?.Data.CalculateTime() ?? 0) -
+                     (_currentRequest?.Time ?? 0);
         return (true, string.Format(RequestAddToQueue, _queue.Count, TimeSpan.FromSeconds(time)));
     }
 

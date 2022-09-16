@@ -7,10 +7,14 @@ public class ImageCreatorData : IProcessInitData
     public int Count { get; }
     public string FileName { get; }
     public string Folder { get; }
+    public float? Strength { get; }
+    public string? InitImageUrl { get; }
+    public string? InitMaskUrl { get; }
     public string ProcessFilePath { get; }
     public string Prompt { get; }
     public float Scale { get; }
     public long StartSeed { get; }
+    public string Orientation { get; }
     public int StartSteps { get; }
     public int Step { get; }
     public int StepsCount { get; }
@@ -23,7 +27,12 @@ public class ImageCreatorData : IProcessInitData
         int count,
         float scale,
         long startSeed,
-        string folder = ".")
+        string orientation,
+        string folder = ".",
+        float? strength = null,
+        string? initImageUrl = null,
+        string? initMaskUrl = null
+    )
     {
         ProcessFilePath = processFilePath;
         WorkingFolder = workingWorkingFolder;
@@ -35,12 +44,16 @@ public class ImageCreatorData : IProcessInitData
         Count = count;
         Scale = scale;
         StartSeed = startSeed;
+        Orientation = orientation;
         Folder = folder;
+        Strength = strength != null ? (float?)Math.Round(strength.GetValueOrDefault(), 3) : null;
+        InitImageUrl = initImageUrl;
+        InitMaskUrl = initMaskUrl;
     }
 
     public float CalculateTime()
     {
-        const float iterationDuration = 3.5f;
+        const float iterationDuration = 4f;
         const float startingDelay = 20f;
         return Count * (StartSteps + Step * (1 + StepsCount) / 2) * StepsCount * iterationDuration + startingDelay;
     }
@@ -55,6 +68,10 @@ public class ImageCreatorData : IProcessInitData
                $"--count={Count} " +
                $"--scale={Scale.ToString(CultureInfo.InvariantCulture)} " +
                $"--start_seed={StartSeed} " +
+               $"--orientation={Orientation} " +
+               (Strength != null ? $"--strength={Strength?.ToString(CultureInfo.InvariantCulture)} " : "") +
+               (InitImageUrl != null ? $"--init_image_url=\"{InitImageUrl}\" " : "") +
+               (InitMaskUrl != null ? $"--init_mask_url=\"{InitMaskUrl}\" " : "") +
                $"--folder={Folder}";
     }
 }

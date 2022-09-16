@@ -2,7 +2,7 @@
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using File = System.IO.File;
+using File = Telegram.Bot.Types.File;
 
 namespace FantasyCreator;
 
@@ -12,19 +12,20 @@ public class BotHandler
 
     public TelegramBotClient Bot { get; set; }
 
-    public BotHandler(TelegramBotClient bot)
+    public string BotToken { get; }
+
+    public BotHandler(TelegramBotClient bot, string botToken)
     {
         Bot = bot;
+        BotToken = botToken;
         Queue.OnCreateImages += OnCreateImages;
     }
 
     public ReceiverOptions CreateReceiverOptions()
     {
-        List<UpdateType> allowedUpdates = Enum.GetValues(typeof(UpdateType)).Cast<UpdateType>().ToList();
-        allowedUpdates.Remove(UpdateType.Message);
         ReceiverOptions receiverOptions1 = new()
         {
-            AllowedUpdates = Array.Empty<UpdateType>() //allowedUpdates.ToArray()
+            AllowedUpdates = Array.Empty<UpdateType>()
         };
         return receiverOptions1;
     }
@@ -37,7 +38,7 @@ public class BotHandler
 
     public async Task HandleUpdateAsync(ITelegramBotClient bot, Update update, CancellationToken token)
     {
-        string messageText = update.Message?.Text ?? "";
+        string messageText = update.Message?.Text ?? update.Message?.Caption ?? "";
         string[] words = messageText.Split(" ");
         if (words.Length == 0 || update.Message == null) return;
 
@@ -45,15 +46,20 @@ public class BotHandler
 
         switch (words[0].ToLower())
         {
-            case "!dream":
             case "/dream":
-            case "/дрим":
-            case "!дрим":
-                await CreateNewRequest(text, update.Message.Chat.Id, Queue, bot, token);
+                string? imageUrl = null;
+                string? maskUrl = null;
+
+                string? fileId = update.Message?.Photo?.LastOrDefault()?.FileId;
+                if (fileId != null)
+                {
+                    const string url = "https://api.telegram.org/file/bot{0}/{1}";
+                    File file = await bot.GetFileAsync(fileId, token);
+                    imageUrl = file.FilePath != null ? string.Format(url, BotToken, file.FilePath) : null;
+                }
+
+                await CreateNewRequest(text, update.Message.Chat.Id, Queue, bot, token, imageUrl, maskUrl);
                 break;
-            case "!очередь":
-            case "/очередь":
-            case "!order":
             case "/order":
                 await GetCurrentOrders(update.Message.Chat.Id);
                 break;
@@ -64,10 +70,12 @@ public class BotHandler
         string text, long chatId,
         RequestQueue requestQueue,
         ITelegramBotClient bot,
-        CancellationToken token)
+        CancellationToken token,
+        string? imageUrl,
+        string? maskUrl)
     {
         Dictionary<string, string> input = MessageUtility.ParseMessage(text);
-        (bool result, string addingResponse) = requestQueue.CreateNewRequest(input, chatId);
+        (bool result, string addingResponse) = requestQueue.CreateNewRequest(input, chatId, imageUrl, maskUrl);
         await bot.SendTextMessageAsync(chatId, addingResponse, cancellationToken: token);
     }
 
@@ -78,13 +86,11 @@ public class BotHandler
 
     private async void OnCreateImages(long chatId, string[] imagePaths)
     {
-        if (imagePaths.Any(File.Exists) == false)
-        {
+        if (imagePaths.Any(System.IO.File.Exists) == false)
             await Bot.SendTextMessageAsync(chatId, "error on create image");
-        }
         foreach (string path in imagePaths)
         {
-            if(File.Exists(path) == false) continue;
+            if (System.IO.File.Exists(path) == false) continue;
 
             FileStream stream = new(path, FileMode.Open);
             await Bot.SendPhotoAsync(chatId, new InputMedia(stream, Path.GetFileName(path)));

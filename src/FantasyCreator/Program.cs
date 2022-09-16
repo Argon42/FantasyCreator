@@ -8,7 +8,7 @@ if (botToken == null) throw new Exception($"Bot token not exist, please use {bot
 using CancellationTokenSource cts = new();
 TelegramBotClient bot = new(botToken);
 
-BotHandler botHandler = new BotHandler(bot);
+BotHandler botHandler = new(bot, botToken);
 bot.StartReceiving(
     botHandler.HandleUpdateAsync,
     botHandler.HandlePollingErrorAsync,
