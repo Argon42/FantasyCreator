@@ -6,7 +6,7 @@ public class RequestQueue
     private const string IncorrectRequestResponse = "Некорректный запрос";
     private const string RequestAddToQueue = "Запрос в очереди №{0}, примерное время ожидания {1:g}";
 
-    public event Action<long, string[]>? OnCreateImages;
+    public event Action<long, string>? OnCreateImage;
 
     private readonly Queue<Request> _queue = new(20);
     private Request? _currentRequest;
@@ -35,12 +35,16 @@ public class RequestQueue
         return (true, string.Format(RequestAddToQueue, _queue.Count, TimeSpan.FromSeconds(time)));
     }
 
+    private void CreateImage(Request sender, string path)
+    {
+        OnCreateImage?.Invoke(sender.ChatId, path);
+    }
+
     private void OnComplete(Request sender, string[] paths)
     {
-        OnCreateImages?.Invoke(sender.ChatId, paths);
-
         _currentRequest = null;
         sender.OnComplete -= OnComplete;
+        sender.OnCreateImage -= CreateImage;
         if (_queue.Count > 0) StartRequest(_queue.Dequeue());
     }
 
@@ -48,6 +52,7 @@ public class RequestQueue
     {
         _currentRequest = request;
         _currentRequest.OnComplete += OnComplete;
+        _currentRequest.OnCreateImage += CreateImage;
         _currentRequest.Start();
     }
 }

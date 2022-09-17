@@ -3,6 +3,7 @@
 public class Request
 {
     public event Action<Request, string[]>? OnComplete;
+    public event Action<Request, string>? OnCreateImage;
     private readonly Creator _creator;
     private DateTime? _startTime;
 
@@ -20,7 +21,7 @@ public class Request
     public async void Start()
     {
         _startTime = DateTime.Now;
-        string[] paths = await _creator.CreateImages(Data);
+        string[] paths = await _creator.CreateImages(Data, path => OnCreateImage?.Invoke(this, path));
         OnComplete?.Invoke(this, paths);
     }
 

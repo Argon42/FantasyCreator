@@ -8,7 +8,7 @@ namespace FantasyCreator;
 
 public class BotHandler
 {
-    private readonly RequestQueue Queue = new();
+    private readonly RequestQueue _queue = new();
 
     public TelegramBotClient Bot { get; set; }
 
@@ -18,7 +18,7 @@ public class BotHandler
     {
         Bot = bot;
         BotToken = botToken;
-        Queue.OnCreateImages += OnCreateImages;
+        _queue.OnCreateImage += OnCreateImage;
     }
 
     public ReceiverOptions CreateReceiverOptions()
@@ -58,7 +58,7 @@ public class BotHandler
                     imageUrl = file.FilePath != null ? string.Format(url, BotToken, file.FilePath) : null;
                 }
 
-                await CreateNewRequest(text, update.Message.Chat.Id, Queue, bot, token, imageUrl, maskUrl);
+                await CreateNewRequest(text, update.Message.Chat.Id, _queue, bot, token, imageUrl, maskUrl);
                 break;
             case "/order":
                 await GetCurrentOrders(update.Message.Chat.Id);
@@ -84,17 +84,13 @@ public class BotHandler
         throw new NotImplementedException();
     }
 
-    private async void OnCreateImages(long chatId, string[] imagePaths)
+    private async void OnCreateImage(long chatId, string path)
     {
-        if (imagePaths.Any(System.IO.File.Exists) == false)
+        if (System.IO.File.Exists(path) == false)
             await Bot.SendTextMessageAsync(chatId, "error on create image");
-        foreach (string path in imagePaths)
-        {
-            if (System.IO.File.Exists(path) == false) continue;
 
-            FileStream stream = new(path, FileMode.Open);
-            await Bot.SendPhotoAsync(chatId, new InputMedia(stream, Path.GetFileName(path)));
-            stream.Close();
-        }
+        await using FileStream stream = new(path, FileMode.Open);
+        string fileName = Path.GetFileName(path);
+        await Bot.SendPhotoAsync(chatId, new InputMedia(stream, fileName), fileName);
     }
 }

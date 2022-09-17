@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 
 namespace FantasyCreator;
 
@@ -41,7 +42,7 @@ public class ProcessHandler : IDisposable
         _process.Kill();
     }
 
-    public async Task<string> Start()
+    public async Task<string> Start(Action<string>? onImageCreated = null)
     {
         if (Enabled) throw new InvalidOperationException("Process enabled");
 
@@ -50,9 +51,16 @@ public class ProcessHandler : IDisposable
 
 
         StreamReader reader = _process.StandardOutput;
-        string output = await reader.ReadToEndAsync();
+        StringBuilder allOutput = new(255);
+        while (Enabled)
+        {
+            string? output = await reader.ReadLineAsync();
+            if (output == null) continue;
+            onImageCreated?.Invoke(output);
+            allOutput.AppendLine(output);
+        }
 
         await _process.WaitForExitAsync();
-        return output;
+        return allOutput.ToString();
     }
 }

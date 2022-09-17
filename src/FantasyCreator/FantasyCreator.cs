@@ -36,10 +36,10 @@ internal class Creator
 
     private ProcessHandler? _creator;
 
-    public async Task<string[]> CreateImages(ImageCreatorData data)
+    public async Task<string[]> CreateImages(ImageCreatorData data, Action<string> onImageCreated)
     {
         _creator = new ProcessHandler(data);
-        string paths = await _creator.Start();
+        string paths = await _creator.Start(onImageCreated);
         _creator = null;
 
         return paths.Split();
