@@ -10,7 +10,7 @@ public static class MessageUtility
     public static Dictionary<string, string> ParseMessage(string text)
     {
         var dictionary = new Dictionary<string, string>();
-        string pattern = "[-—]\\w*?=[\\d\\w.,]*";
+        string pattern = "[-—][\\w_]*?=[\\d\\w.,]*";
         List<Match> matchesInList = Regex.Matches(text, pattern, RegexOptions.IgnoreCase).ToList();
         string[] matchesInArray = matchesInList.Select(match => match.Groups[0].Value).ToArray();
         foreach (string item in matchesInArray)
