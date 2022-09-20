@@ -9,19 +9,14 @@ public static class MessageUtility
 
     public static Dictionary<string, string> ParseMessage(string text)
     {
+        text = text.Replace("\n", " ").Trim();
+        string pattern = "[-—]([\\w_]*?)=([\\S]*)";
         var dictionary = new Dictionary<string, string>();
-        string pattern = "[-—][\\w_]*?=[\\d\\w.,]*";
-        List<Match> matchesInList = Regex.Matches(text, pattern, RegexOptions.IgnoreCase).ToList();
-        string[] matchesInArray = matchesInList.Select(match => match.Groups[0].Value).ToArray();
-        foreach (string item in matchesInArray)
-        {
-            string[] keyAndValue = item.Split('=');
-            dictionary.Add(keyAndValue[0].Substring(1, keyAndValue[0].Length - 1), keyAndValue[1].Replace(',', '.'));
-        }
-
+        foreach (Match match in Regex.Matches(text, pattern, RegexOptions.IgnoreCase))
+            if (dictionary.ContainsKey(match.Groups[1].Value) == false)
+                dictionary.Add(match.Groups[1].Value, match.Groups[2].Value);
         dictionary.Add(MessageKey, Regex.Replace(text, pattern, ""));
         dictionary.Add(RawMessageKey, text);
-
         return dictionary;
     }
 }

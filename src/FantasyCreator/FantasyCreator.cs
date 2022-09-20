@@ -11,7 +11,7 @@ internal class Creator
     private const string Prompt = "prompt";
 
     private const string Steps = "steps";
-    private const int DefaultValueStartSteps = 10;
+    private const int DefaultValueStartSteps = 20;
 
     private const string StepsCount = "steps_count";
     private const int DefaultValueStepsCount = 1;
@@ -33,6 +33,12 @@ internal class Creator
 
     private const float DefaultValueStrength = 0.8f;
     private const string Strength = "strength";
+
+    private const string? DefaultValueImageUrl = null;
+    private const string ImageUrl = "image_url";
+
+    private const string? DefaultValueMaskUrl = null;
+    private const string MaskUrl = "mask_url";
 
     private ProcessHandler? _creator;
 
@@ -57,6 +63,8 @@ internal class Creator
         string? imageUrl = null,
         string? maskUrl = null)
     {
+        imageUrl ??= GetValue(input, ImageUrl, DefaultValueImageUrl, s => s);
+        maskUrl ??= GetValue(input, MaskUrl, DefaultValueMaskUrl, s => s);
         string file = GetFileName(imageUrl, maskUrl);
         float? defaultValueStrength = file == Text2ImageFile ? (float?)default : DefaultValueStrength;
 
